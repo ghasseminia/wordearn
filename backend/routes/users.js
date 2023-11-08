@@ -18,4 +18,24 @@ router.post("/add-user", async (req, res) => {
   }
 });
 
+// Endpoint to get userId by email
+// curl "http://localhost:9897/get-userid-by-email?email=user@example.com"
+router.get('/get-userid-by-email', async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).send('Email is required.');
+    }
+    
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).send('User not found.');
+    }
+    
+    res.status(200).json({ userId: user._id });
+  } catch (error) {
+    res.status(500).send(`Error retrieving user ID: ${error.message}`);
+  }
+});
+
 module.exports = router;

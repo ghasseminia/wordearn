@@ -16,7 +16,9 @@ router.get("/user-words/:userId", async (req, res) => {
     }
 
     // Find all words associated with the user ID
-    const words = await Word.find({ user: new mongoose.Types.ObjectId(userId) });
+    const words = await Word.find({
+      user: new mongoose.Types.ObjectId(userId),
+    });
     res.status(200).json(words);
   } catch (error) {
     res.status(500).send(`Error retrieving words: ${error.message}`);
@@ -80,6 +82,69 @@ router.post("/add-words", async (req, res) => {
     res.status(201).send("Words added successfully!");
   } catch (error) {
     res.status(500).send(`Error adding words: ${error.message}`);
+  }
+});
+
+// Endpoint to get the next word for a specific user and increment its 'times_shown'
+// example curl http://localhost:9897/next-word/654844620a4266d21f5225b0
+router.get("/next-word/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).send("Invalid user ID.");
+    }
+
+    // Find the word for the user that has been shown the least number of times
+    const words = await Word.find({ user: new mongoose.Types.ObjectId(userId) })
+      .sort({ times_shown: 1 })
+      .limit(1);
+
+    if (words.length === 0) {
+      return res.status(404).send("No words found for the user.");
+    }
+
+    const nextWord = words[0];
+
+    // Increment the 'times_shown' field for the retrieved word
+    nextWord.times_shown += 1;
+    await nextWord.save();
+
+    res.status(200).json(nextWord);
+  } catch (error) {
+    res.status(500).send(`Error retrieving the next word: ${error.message}`);
+  }
+});
+
+// Endpoint to update the 'times_remembered' for a word
+// example 
+// curl -X POST -H "Content-Type: application/json" \
+//  -d '{"wordId":"wordObjectId", "remembered":true}' \
+//  http://localhost:9897/update-recall
+
+router.post("/update-recall", async (req, res) => {
+  try {
+    const { wordId, remembered } = req.body;
+
+    // Check if the provided wordId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(wordId)) {
+      return res.status(400).send("Invalid word ID.");
+    }
+
+    // Find the word by ID
+    const word = await Word.findById(wordId);
+    if (!word) {
+      return res.status(404).send("Word not found.");
+    }
+
+    // Update 'times_remembered' based on whether the user remembered the word
+    if (remembered) {
+      word.times_remembered += 1;
+      await word.save();
+    }
+
+    res.status(200).send("Word recall updated successfully.");
+  } catch (error) {
+    res.status(500).send(`Error updating word recall: ${error.message}`);
   }
 });
 
