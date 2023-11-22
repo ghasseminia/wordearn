@@ -150,7 +150,7 @@ router.post("/update-recall", async (req, res) => {
 // example
 // curl -X POST -H "Content-Type: application/json" -d '{"wordId":"wordObjectId", "remembered":true}' http://localhost:9897/update-recall
 
-router.post("/update-active", async (req, res) => {
+router.post("/toggleWordActiveStatus", async (req, res) => {
   try {
     const { wordId, isActive } = req.body;
 
@@ -173,6 +173,47 @@ router.post("/update-active", async (req, res) => {
     res.status(200).send("Word recall updated successfully.");
   } catch (error) {
     res.status(500).send(`Error updating word recall: ${error.message}`);
+  }
+});
+
+// Endpoint to get a word by its ID and related userId
+// curl http://localhost/word/654844e40a4266d21f5225b2/654844620a4266d21f5225b0
+router.get("/word/:wordId/:userId", async (req, res) => {
+  try {
+    const { wordId, userId } = req.params;
+
+    // Validate the IDs
+    if (!mongoose.Types.ObjectId.isValid(wordId) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).send("Invalid IDs provided.");
+    }
+
+    // Find the word by ID and userId
+    const word = await Word.findOne({ _id: wordId, user: userId });
+
+    if (!word) {
+      return res.status(404).send("Word not found or does not belong to the user.");
+    }
+
+    res.status(200).json(word);
+  } catch (error) {
+    res.status(500).send(`Error retrieving the word: ${error.message}`);
+  }
+});
+
+// Endpoint to get the number of words for a specific user
+// curl http://localhost:9897/word-count/654844620a4266d21f5225b0
+router.get('/word-count/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).send('Invalid user ID.');
+    }
+    
+    // Count the number of words associated with the user ID
+    const count = await Word.countDocuments({ user: new mongoose.Types.ObjectId(userId) });
+    res.status(200).json({ userId: userId, wordCount: count });
+  } catch (error) {
+    res.status(500).send(`Error retrieving word count: ${error.message}`);
   }
 });
 
