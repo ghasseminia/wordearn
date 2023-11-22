@@ -11,6 +11,7 @@ const wordSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: "User" },
   time_added: { type: Date, default: Date.now },
   time_last_shown: Date,
+  isActive: { type: Boolean, default: true }
 });
 
 // Mongoose word model

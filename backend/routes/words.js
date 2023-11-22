@@ -32,7 +32,7 @@ router.post("/add-word", async (req, res) => {
     const { userId, ...wordData } = req.body;
 
     // Create a new word with the user ID
-    const newWord = new Word({ ...wordData, user: userId });
+    const newWord = new Word({ ...wordData, user: userId, isActive: true });
 
     // Save the word to the database
     await newWord.save();
@@ -116,10 +116,8 @@ router.get("/next-word/:userId", async (req, res) => {
 });
 
 // Endpoint to update the 'times_remembered' for a word
-// example 
-// curl -X POST -H "Content-Type: application/json" \
-//  -d '{"wordId":"wordObjectId", "remembered":true}' \
-//  http://localhost:9897/update-recall
+// example
+// curl -X POST -H "Content-Type: application/json" -d '{"wordId":"wordObjectId", "remembered":true}' http://localhost:9897/update-recall
 
 router.post("/update-recall", async (req, res) => {
   try {
@@ -141,6 +139,36 @@ router.post("/update-recall", async (req, res) => {
       word.times_remembered += 1;
       await word.save();
     }
+
+    res.status(200).send("Word recall updated successfully.");
+  } catch (error) {
+    res.status(500).send(`Error updating word recall: ${error.message}`);
+  }
+});
+
+// Endpoint to update the 'times_remembered' for a word
+// example
+// curl -X POST -H "Content-Type: application/json" -d '{"wordId":"wordObjectId", "remembered":true}' http://localhost:9897/update-recall
+
+router.post("/update-active", async (req, res) => {
+  try {
+    const { wordId, isActive } = req.body;
+
+    // Check if the provided wordId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(wordId)) {
+      return res.status(400).send("Invalid word ID.");
+    }
+
+    // Find the word by ID
+    const word = await Word.findById(wordId);
+    if (!word) {
+      return res.status(404).send("Word not found.");
+    }
+
+    // Update 'times_remembered' based on whether the user remembered the word
+
+    word.isActive = isActive;
+    await word.save();
 
     res.status(200).send("Word recall updated successfully.");
   } catch (error) {
